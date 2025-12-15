@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -50,7 +51,17 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	contentType := headers.Header.Get("Content-Type")
+	contentType, _, err := mime.ParseMediaType(headers.Header.Get("Content-Type"))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid Content-Type header", err)
+		return
+	}
+
+	// if content type is not image/jpeg or image/png, return error
+	if contentType != "image/jpeg" && contentType != "image/png"{
+		respondWithError(w, http.StatusBadRequest, "Unsupported thumbnail content type", nil)
+		return
+	}
 
 	fileType := strings.Split(contentType, "/")
 	// map to a file extension png -> .png, jpeg -> .jpg etc.
